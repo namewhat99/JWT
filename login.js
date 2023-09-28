@@ -137,15 +137,32 @@ const isLoggedIn = async (req, res, next) => {
     
 }
 
-const isNotLoggedIn = (req, res, next) => {
-
+const isNotLoggedIn = async (req, res, next) => {
+    
     const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
 
-    if(accessToken){
+    const isVerified = await isVerifiedAccessToken(accessToken);
+    const isNotExpired = await checkExpirationDate(accessToken);
+
+    if(isVerified && isNotExpired){
         res.redirect('/');
+    }else if(isVerified && !isNotExpired){
+
+        const subPayload = accessToken.split('.')[1];
+        const user = JSON.parse(Buffer.from(subPayload, 'base64').toString()).sub;
+        const isMatched = await checkRefreshToken(user, refreshToken);
+
+        if(isMatched){
+            const accessToken = new AccessToken(user).token
+            res.cookie('accessToken', accessToken);
+            res.redirect('/');
+        }else{
+            next();
+        }
     }else{
         next();
     }
 }
 
-export { login , isLoggedIn , isNotLoggedIn};
+export { login , isLoggedIn , isNotLoggedIn };

@@ -10,6 +10,7 @@
 
   -[X] AccessToken 이 존재하지 않으면, 혹은 올바르지 않은 AccessToken -> 재로그인
 
+  -[] AccessToken 클라이언트에서 저장 구현 필요
 
 <h3>JWT.js<br>
   - secertKey 는 공개되면 안되므로 private 변수 설정
