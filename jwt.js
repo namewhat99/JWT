@@ -46,7 +46,7 @@ export class Token{
 
         const payLoad = JSON.stringify(
             {"iss":"lee" // 발급자
-            ,"exp": 1000 // 만료시간이 30분 이후인 JWT 토큰
+            ,"exp": 1000 * 60 * 30 // 만료시간이 30분 이후인 JWT 토큰
             ,"sub" : username // 유저 id
         });
 
