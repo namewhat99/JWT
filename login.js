@@ -15,7 +15,45 @@ const saveRefreshToken = (username, refreshToken) => {
     });
 }
 
-const checkAccessToken = (accessToken) => {
+const checkRefreshToken = (username, refreshToken) => {
+
+    return new Promise((resolve , reject) => {
+        try{
+            const db = JSON.parse(fs.readFileSync('./db.json'));
+            
+            if(db[username] === refreshToken){
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        }catch(err){
+            reject(err);
+        }
+    })
+}
+
+const isVerifiedAccessToken = (accessToken) => {
+
+    return new Promise((resolve , reject) => {
+        try{
+
+            if(!accessToken) resolve(false);
+
+            const [header , payload , signature] = accessToken.split('.');
+            const verifySignature = crypto.createHmac('sha256', process.env.SECRET_KEY).update(header + "." + payload).digest('base64url');
+
+            if(signature == verifySignature){
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        }catch{
+            reject(err);
+        }
+    })
+}
+
+const checkExpirationDate = (accessToken) => {
     
     return new Promise((resolve, reject) => {
         try{
@@ -55,37 +93,48 @@ const login = async (req, res) => {
     }
 }
 
+/**
+ * accessToken 을 통해 로그인 여부를 판단하는 middleWare,
+ * isVerified 를 통해 accessToken 이 존재함과 해당 서버의 토큰이 맞는지 확인하고 isNotExpired 를 통해 만료되지 않았는지 확인한다.
+ * 만약 올바른 accessToken 이면 그대로 진행 , 올바른 토큰이지만 만료되었으면 재발행, 
+ * 올바르지 않은 token 이면 로그인 페이지로 redirection 한다.
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ */
+
 const isLoggedIn = async (req, res, next) => {
     
     const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
 
-    if(accessToken){
+    const isVerified = await isVerifiedAccessToken(accessToken);
+    const isNotExpired = await checkExpirationDate(accessToken);
 
-        const canAccess = await checkAccessToken(accessToken);
+    if(isVerified && isNotExpired){
+        next();
+    }else if(isVerified && !isNotExpired){
 
-        if(canAccess){
+        const subPayload = accessToken.split('.')[1];
+        const user = JSON.parse(Buffer.from(subPayload, 'base64').toString()).sub;
+        const isMatched = await checkRefreshToken(user, refreshToken);
+
+        if(isMatched){
+            const accessToken = new AccessToken(user).token
+            res.cookie('accessToken', accessToken);
             next();
         }else{
-
-            if(refreshToken){
-
-                const subPayLoad = JSON.parse(Buffer.from(refreshToken.split('.')[1], 'base64').toString()).sub;
-                const newAccessToken = new AccessToken(subPayLoad).token;   
-
-                res.cookie('accessToken', newAccessToken);
-                next();
-            }else{
-                res.redirect('/login');
-            }
+            res.redirect('/login')
         }
     }else{
         res.redirect('/login');
     }
+    
 }
 
 const isNotLoggedIn = (req, res, next) => {
-    
+
     const accessToken = req.cookies.accessToken;
 
     if(accessToken){
