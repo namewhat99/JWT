@@ -1,12 +1,16 @@
 import express from 'express';
-import checkLogin from './login.js';
+import { isLoggedIn, isNotLoggedIn, login } from './login.js';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-    res.render('index');
+router.get('/login', isNotLoggedIn  , (req, res) => {
+    res.render('login.ejs');
 });
 
-router.post('/api/login' , checkLogin)
+router.get('/' , isLoggedIn , (req , res) =>{
+    res.render('main.ejs')
+})
+
+router.post('/api/login' , login)
 
 export default router;

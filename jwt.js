@@ -2,18 +2,10 @@ import crypto from "crypto"
 import dotenv from "dotenv"
 
 dotenv.config();
+class Token{
 
-export class Token{
-
-    #secretKey;
-
-    constructor(id){
+    constructor(){
         this.encodedHeader;
-        this.endcodedPayload;
-        this.signature;
-        this.username = id
-        this.#secretKey = process.env.SECRET_KEY;
-        this.token = this.generateToken();
     }
     /**
      * base64 인코딩과 base64 URL 인코딩 차이점으로 인해 해당 함수 구현
@@ -39,8 +31,20 @@ export class Token{
 
         return this.encodedHeader = this.base64URLEncode(Buffer.from(header , 'utf-8'));
     }
+}
 
-    // payload 의 정보를 base64URL 로 인코딩한다.
+class AccessToken extends Token{
+
+    #secretKey;
+
+    constructor(id){
+        super(id);
+        this.endcodedPayload;
+        this.signature;
+        this.username = id
+        this.#secretKey = process.env.SECRET_KEY;
+        this.token = this.generateToken();
+    }
 
     encodePayload(username){
 
@@ -50,21 +54,58 @@ export class Token{
             ,"sub" : username // 유저 id
         });
 
-        return this.encodedPayload = this.base64URLEncode(Buffer.from(payLoad , 'utf-8'));
+        return this.encodedPayload = super.base64URLEncode(Buffer.from(payLoad , 'utf-8'));
     }
 
     // header 와 payload 를 합쳐서 signature 를 만든다.
 
     generateSignature(){
         this.signature = crypto.createHmac('sha256', this.#secretKey)
-        .update(this.encodeHeader() + "." + this.encodePayload(this.username))
+        .update(super.encodeHeader() + "." + this.encodePayload(this.username))
         .digest('base64url')
     }
 
-    // header 와 payload 와 signature 를 합쳐서 JWT 토큰을 만든다.
+    generateToken(){
+        this.generateSignature();
+        return this.encodedHeader + "." + this.encodedPayload + "." + this.signature;
+    }
+}
+
+class RefreshToken extends Token{
+
+    #secretKey;
+
+    constructor(){
+        super();
+        this.endcodedPayload;
+        this.signature;
+        this.#secretKey = process.env.SECRET_KEY;
+        this.token = this.generateToken();
+    }
+
+    encodePayload(){
+
+        const payLoad = JSON.stringify(
+            {"iss":"lee" // 발급자
+            ,"exp": 1000 * 60 * 1440 // 만료시간이 1일인 refresh Token
+            // username 은 지운다.
+        });
+
+        return this.encodedPayload = super.base64URLEncode(Buffer.from(payLoad , 'utf-8'));
+    }
+
+    // header 와 payload 를 합쳐서 signature 를 만든다.
+
+    generateSignature(){
+        this.signature = crypto.createHmac('sha256', this.#secretKey)
+        .update(super.encodeHeader() + "." + this.encodePayload(this.username))
+        .digest('base64url')
+    }
 
     generateToken(){
         this.generateSignature();
-        return this.token = this.encodedHeader + "." + this.encodedPayload + "." + this.signature;
+        return this.encodedHeader + "." + this.encodedPayload + "." + this.signature;
     }
 }
+
+export { AccessToken, RefreshToken }
