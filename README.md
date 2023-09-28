@@ -1,20 +1,16 @@
-# JWT <br>
+## 라이브러리 없이 JWT 구현<br>
+  
+- [base64URL 인코딩 ](#base64URL-)<br>
+    - 먼저 문자열을 utf-8 을 기준으로 하여 binary 데이터로 만든다. 
+    - 변환된 binary 데이터를 base64 로 인코딩한다.
+    - base64 와 base64URL 의 차이는 + 는 - 로 , / 는 _ 로 , = 는 빈칸으로 바꾼다.
+    - 이 부분은 Token 클래스의 base64URLEncode 함수로 구현됨
 
-<h3> 라이브러리 사용하지 않고 직접 header, payload, signature 구현<br>
+- [jwt.js](#jwt-)<br>
 
-  -[X] 인증이 되면 AccessToken 과 RefreshToken 발행
+    - AccessToken 과 RefreshToken 은 Token 클래스의 상속
+    - JWT 의 Header 와 Payload 는 각각을 생성 후, base64URL 인코딩
+    - Signature 는 인코딩한  Header 와 Payload 를 '.' 으로 합친 후, secretKey 와 함께 해시 알고리즘으로 암호화 한다.
+    - AccessToken 과 RefreshToken 모두 이 과정을 거쳐서 생성한다. 차이점은 RefreshToken 은 지속시간이 더 길고, 해당 사용자의 정보를 payload 에 담지 않는다는 점
 
-  -[X] AccessToken 과 RefreshToken cookie에 담아서 응답
-
-  -[X] 요청이 올 때 AccessToken 이 존재하고,해당 서버에서 발행,  만료 전 -> 인증 , 만료 -> DB 에서 RefreshToken 을 체크 후 맞으면 AceessToken 재발급
-
-  -[X] AccessToken 이 존재하지 않으면, 혹은 올바르지 않은 AccessToken -> 재로그인
-
-  -[] AccessToken 클라이언트에서 저장 구현 필요
-
-<h3>JWT.js<br>
-  - secertKey 는 공개되면 안되므로 private 변수 설정
-  - JWT 는 3 부분으로 이뤄짐 header , payload , signature
-  - header 와 payload 는 각각 base64URL 인코딩한다.
-  - signature 는 header 와 payload 를 '.' 으로 합친 후 secretKey 를 이용해서 (HMAC ...)
-
+- [JWT 인증 과정 ](#jwt-) 
