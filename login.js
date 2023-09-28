@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { AccessToken, RefreshToken } from './jwt.js';
+import crypto from 'crypto';
 
 const saveRefreshToken = (username, refreshToken) => {
 
@@ -47,7 +48,7 @@ const isVerifiedAccessToken = (accessToken) => {
             }else{
                 resolve(false);
             }
-        }catch{
+        }catch(err){
             reject(err);
         }
     })
@@ -56,6 +57,9 @@ const isVerifiedAccessToken = (accessToken) => {
 const checkExpirationDate = (accessToken) => {
     
     return new Promise((resolve, reject) => {
+
+        if(!accessToken) resolve(false);
+
         try{
             const payload = accessToken.split('.')[1];
             const { exp } = JSON.parse(Buffer.from(payload, 'base64').toString());

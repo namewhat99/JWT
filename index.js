@@ -1,12 +1,14 @@
 import express from 'express';
 import router from './router.js';
 import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
 
 const app = express()
 const PORT = 3002;
 
 app.set('view engine', 'ejs');
 
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
