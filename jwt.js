@@ -1,5 +1,6 @@
 import crypto from "crypto"
 import dotenv from "dotenv"
+import uuid4 from "uuid4"
 
 dotenv.config();
 class Token{
@@ -71,41 +72,10 @@ class AccessToken extends Token{
     }
 }
 
-class RefreshToken extends Token{
-
-    #secretKey;
-
+class Uuid{
     constructor(){
-        super();
-        this.endcodedPayload;
-        this.signature;
-        this.#secretKey = process.env.SECRET_KEY;
-        this.token = this.generateToken();
-    }
-
-    encodePayload(){
-
-        const payLoad = JSON.stringify(
-            {"iss":"lee" // 발급자
-            ,"exp": 1000 * 60 * 1440 // 만료시간이 1일인 refresh Token
-            // username 은 지운다.
-        });
-
-        return this.encodedPayload = super.base64URLEncode(Buffer.from(payLoad , 'utf-8'));
-    }
-
-    // header 와 payload 를 합쳐서 signature 를 만든다.
-
-    generateSignature(){
-        this.signature = crypto.createHmac('sha256', this.#secretKey)
-        .update(super.encodeHeader() + "." + this.encodePayload(this.username))
-        .digest('base64url')
-    }
-
-    generateToken(){
-        this.generateSignature();
-        return this.encodedHeader + "." + this.encodedPayload + "." + this.signature;
+        this.uuid = uuid4();
     }
 }
 
-export { AccessToken, RefreshToken }
+export { AccessToken , Uuid}

@@ -1,13 +1,13 @@
 import fs from 'fs';
-import { AccessToken, RefreshToken } from './jwt.js';
+import { AccessToken, Uuid } from './jwt.js';
 import crypto from 'crypto';
 
-const saveRefreshToken = (username, refreshToken) => {
+const saveRefreshUuid = (username, refreshUuid) => {
 
     return new Promise((resolve, reject) => {
         try{
             const db = JSON.parse(fs.readFileSync('./db.json'));
-            db[username] = refreshToken;
+            db[username] = refreshUuid;
             fs.writeFileSync('./db.json', JSON.stringify(db));
             resolve(true);
         }catch(err){
@@ -16,13 +16,13 @@ const saveRefreshToken = (username, refreshToken) => {
     });
 }
 
-const checkRefreshToken = (username, refreshToken) => {
+const checkRefreshUuid = (username, refreshUuid) => {
 
     return new Promise((resolve , reject) => {
         try{
             const db = JSON.parse(fs.readFileSync('./db.json'));
             
-            if(db[username] === refreshToken){
+            if(db[username] === refreshUuid){
                 resolve(true);
             }else{
                 resolve(false);
@@ -83,13 +83,13 @@ const login = async (req, res) => {
     if(username == 'admin' && password == '1234'){
 
         const accessToken = new AccessToken(username).token;
-        const refreshToken = new RefreshToken().token;
+        const refreshUuid = new Uuid().uuid;
 
-        const savedRefreshToken = await saveRefreshToken(username, refreshToken);
+        const savedRefreshToken = await saveRefreshUuid(username, refreshUuid);
 
         if(savedRefreshToken){
             res.cookie('accessToken', accessToken);
-            res.cookie('refreshToken', refreshToken);
+            res.cookie('refreshUuid', refreshUuid);
             res.redirect('/');
         }else{
             res.redirect('/login')
@@ -111,7 +111,7 @@ const login = async (req, res) => {
 const isLoggedIn = async (req, res, next) => {
     
     const accessToken = req.cookies.accessToken;
-    const refreshToken = req.cookies.refreshToken;
+    const refreshUuid = req.cookies.refreshUuid;
 
     const isVerified = await isVerifiedAccessToken(accessToken);
     const isNotExpired = await checkExpirationDate(accessToken);
@@ -122,7 +122,7 @@ const isLoggedIn = async (req, res, next) => {
 
         const subPayload = accessToken.split('.')[1];
         const user = JSON.parse(Buffer.from(subPayload, 'base64').toString()).sub;
-        const isMatched = await checkRefreshToken(user, refreshToken);
+        const isMatched = await checkRefreshUuid(user, refreshUuid);
 
         if(isMatched){
             const accessToken = new AccessToken(user).token
@@ -140,7 +140,7 @@ const isLoggedIn = async (req, res, next) => {
 const isNotLoggedIn = async (req, res, next) => {
     
     const accessToken = req.cookies.accessToken;
-    const refreshToken = req.cookies.refreshToken;
+    const refreshUuid = req.cookies.refreshUuid;
 
     const isVerified = await isVerifiedAccessToken(accessToken);
     const isNotExpired = await checkExpirationDate(accessToken);
@@ -151,7 +151,7 @@ const isNotLoggedIn = async (req, res, next) => {
 
         const subPayload = accessToken.split('.')[1];
         const user = JSON.parse(Buffer.from(subPayload, 'base64').toString()).sub;
-        const isMatched = await checkRefreshToken(user, refreshToken);
+        const isMatched = await checkRefreshUuid(user, refreshUuid);
 
         if(isMatched){
             const accessToken = new AccessToken(user).token
