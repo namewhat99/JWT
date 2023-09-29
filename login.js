@@ -126,7 +126,10 @@ const isLoggedIn = async (req, res, next) => {
 
         if(isMatched){
             const accessToken = new AccessToken(user).token
+            const newRefreshUuid = new Uuid().uuid;
+            await saveRefreshUuid(user, newRefreshUuid); // 한번 사용된 uuid 값은 새로운 값으로 변경
             res.cookie('accessToken', accessToken);
+            res.cookie('refreshUuid', newRefreshUuid);
             next();
         }else{
             res.redirect('/login')
@@ -155,7 +158,9 @@ const isNotLoggedIn = async (req, res, next) => {
 
         if(isMatched){
             const accessToken = new AccessToken(user).token
+            const newRefreshUuid = new Uuid().uuid;
             res.cookie('accessToken', accessToken);
+            res.cookie('refreshUuid', newRefreshUuid);
             res.redirect('/');
         }else{
             next();
