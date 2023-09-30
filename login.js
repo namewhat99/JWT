@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { AccessToken, Uuid } from './jwt.js';
 import crypto from 'crypto';
+import e from 'express';
 
 const saveRefreshUuid = (username, refreshUuid) => {
 
@@ -63,8 +64,10 @@ const checkExpirationDate = (accessToken) => {
         try{
             const payload = accessToken.split('.')[1];
             const { exp } = JSON.parse(Buffer.from(payload, 'base64').toString());
+            
             const now = new Date().getTime();
 
+            console.log(now , exp)
             if(now > exp){
                 resolve(false);
             }else{
@@ -85,15 +88,18 @@ const login = async (req, res) => {
         const accessToken = new AccessToken(username).token;
         const refreshUuid = new Uuid().uuid;
 
-        const savedRefreshToken = await saveRefreshUuid(username, refreshUuid);
+        const savedRefreshUuid = await saveRefreshUuid(username, refreshUuid);
 
-        if(savedRefreshToken){
-            res.cookie('accessToken', accessToken);
-            res.cookie('refreshUuid', refreshUuid);
-            res.redirect('/');
+        if(savedRefreshUuid){
+            res.set({
+                'authorization' : `Bearer ${accessToken}`,
+                'refresh_uuid' : refreshUuid
+            }).status(200).json({loggedIn : true});
         }else{
-            res.redirect('/login')
+            res.status(500).json({loggedIn : false});
         }
+    }else{
+        res.status(401).json({loggedIn : false});
     }
 }
 
@@ -110,11 +116,15 @@ const login = async (req, res) => {
 
 const isLoggedIn = async (req, res, next) => {
     
-    const accessToken = req.cookies.accessToken;
-    const refreshUuid = req.cookies.refreshUuid;
+    const accessToken = req.headers.authorization.split(' ')[1];
+    const refreshUuid = req.headers.refreshUuid;
+
+    console.log(accessToken , refreshUuid)
 
     const isVerified = await isVerifiedAccessToken(accessToken);
     const isNotExpired = await checkExpirationDate(accessToken);
+
+    console.log(isVerified , isNotExpired)
 
     if(isVerified && isNotExpired){
         next();

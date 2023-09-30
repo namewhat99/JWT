@@ -12,7 +12,7 @@
 		<section class="prompt">
 			<h3>todos</h3>
 			<h1>Sign in</h1>
-			<form action="/api/login" method="POST">
+			<form action="/api/login" id="form">
 				<section>
 					<label for="username">Username</label>
 					<input id="username" name="username" type="text" autocomplete="username" required autofocus>
@@ -32,4 +32,39 @@
 			<p>Authentication powered by <a href="https://www.passportjs.org">Passport</a></p>
 		</footer>
 	</body>
+
+	<script>
+
+		const form = document.getElementById('form');
+
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+
+			const username = document.getElementById('username').value;
+			const password = document.getElementById('current-password').value;
+
+			let response = await fetch('/api/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ username, password })
+			})
+
+			if (response.status === 200) {// 쿠키에 refresh_uuid 저장
+
+				const accessToken = response.headers.get('authorization').split(' ')[1];
+				const refreshUuid = response.headers.get('refresh_uuid');
+
+				document.cookie = `refresh_uuid=${refreshUuid}; path=/; expires=${Date.now() + 1000 * 60 * 60 * 24 * 30}; httpOnly;`;
+				document.cookie = `access_token=${accessToken}; path=/; expires=${Date.now() + 1000 * 60 * 30};`;
+
+				window.location.href = '/';
+
+			} else {
+				alert('Invalid username or password');
+			}
+		});
+
+	</script>
 </html>
