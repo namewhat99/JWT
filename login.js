@@ -67,7 +67,7 @@ const checkExpirationDate = (accessToken) => {
     
     return new Promise((resolve, reject) => {
 
-        if(!accessToken) resolve(false);
+        if(accessToken == 'undefined') resolve(false);
 
         try{
             const payload = accessToken.split('.')[1];
@@ -134,13 +134,11 @@ const isLoggedIn = async (req, res, next) => {
     const isNotExpired = await checkExpirationDate(accessToken);
 
     if(isVerified && isNotExpired){
-        console.log('accessToken 유효')
         next();
     }else if(isVerified && !isNotExpired){
 
         const subPayload = accessToken.split('.')[1];
         const user = JSON.parse(Buffer.from(subPayload, 'base64').toString()).sub;
-        console.log(user , refreshUuid) // refreshUuid 가 안담겨있다
         const isMatched = await checkRefreshUuid(user, refreshUuid);
 
         if(isMatched){
@@ -150,45 +148,22 @@ const isLoggedIn = async (req, res, next) => {
 
             req.headers.authorization = `Bearer ${accessToken}`;
             req.headers.refreshUuid = newRefreshUuid;
-            console.log('accessToken 재발행')
             next();
         }else{
-            res.redirect('/login')
+            res.sendStatus(401);
         }
     }else{
-        res.redirect('/login');
+        res.sendStatus(401);
     }
     
 }
 
-const isNotLoggedIn = async (req, res, next) => {
+const logout = async (req, res, next) => {
     
-    const accessToken = req.cookies.accessToken;
-    const refreshUuid = req.cookies.refreshUuid;
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshUuid');
 
-    const isVerified = await isVerifiedAccessToken(accessToken);
-    const isNotExpired = await checkExpirationDate(accessToken);
-
-    if(isVerified && isNotExpired){
-        res.redirect('/');
-    }else if(isVerified && !isNotExpired){
-
-        const subPayload = accessToken.split('.')[1];
-        const user = JSON.parse(Buffer.from(subPayload, 'base64').toString()).sub;
-        const isMatched = await checkRefreshUuid(user, refreshUuid);
-
-        if(isMatched){
-            const accessToken = new AccessToken(user).token
-            const newRefreshUuid = new Uuid().uuid;
-            res.cookie('accessToken', accessToken);
-            res.cookie('refreshUuid', newRefreshUuid);
-            res.redirect('/');
-        }else{
-            next();
-        }
-    }else{
-        next();
-    }
+    next();
 }
 
-export { login , isLoggedIn , isNotLoggedIn };
+export { login , isLoggedIn , logout };

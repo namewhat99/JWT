@@ -1,9 +1,9 @@
 import express from 'express';
-import { isLoggedIn, isNotLoggedIn, login } from './login.js';
+import { isLoggedIn, logout, login } from './login.js';
 
 const router = express.Router();
 
-router.get('/login' , isNotLoggedIn , (req, res) => {
+router.get('/login' , logout , (req, res) => {
     res.render('login.ejs');
 });
 
