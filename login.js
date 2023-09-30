@@ -1,15 +1,17 @@
-import fs from 'fs';
 import { AccessToken, Uuid } from './jwt.js';
 import crypto from 'crypto';
-import e from 'express';
+import { RedisClient } from './redis.js';
 
 const saveRefreshUuid = (username, refreshUuid) => {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try{
-            const db = JSON.parse(fs.readFileSync('./db.json'));
-            db[username] = refreshUuid;
-            fs.writeFileSync('./db.json', JSON.stringify(db));
+            const redisClient = new RedisClient();
+
+            await redisClient.connect();
+            await redisClient.set(username, refreshUuid);
+            await redisClient.disconnect();
+            
             resolve(true);
         }catch(err){
             reject(err);
@@ -19,14 +21,20 @@ const saveRefreshUuid = (username, refreshUuid) => {
 
 const checkRefreshUuid = (username, refreshUuid) => {
 
-    return new Promise((resolve , reject) => {
+    return new Promise(async (resolve , reject) => {
         try{
-            const db = JSON.parse(fs.readFileSync('./db.json'));
-            
-            if(db[username] === refreshUuid){
+
+            const redisClient = new RedisClient();
+            await redisClient.connect();
+
+            const clientRefreshUuid = await redisClient.get(username);
+
+            await redisClient.disconnect();
+
+            if(clientRefreshUuid === refreshUuid){
                 resolve(true);
             }else{
-                resolve(false);
+                resolve(false)
             }
         }catch(err){
             reject(err);
@@ -67,7 +75,6 @@ const checkExpirationDate = (accessToken) => {
             
             const now = new Date().getTime();
 
-            console.log(now , exp)
             if(now > exp){
                 resolve(false);
             }else{
@@ -91,6 +98,10 @@ const login = async (req, res) => {
         const savedRefreshUuid = await saveRefreshUuid(username, refreshUuid);
 
         if(savedRefreshUuid){
+
+            res.cookie('accessToken', accessToken);
+            res.cookie('refreshUuid', refreshUuid , { httpOnly : true });
+
             res.set({
                 'authorization' : `Bearer ${accessToken}`,
                 'refresh_uuid' : refreshUuid
@@ -117,29 +128,29 @@ const login = async (req, res) => {
 const isLoggedIn = async (req, res, next) => {
     
     const accessToken = req.headers.authorization.split(' ')[1];
-    const refreshUuid = req.headers.refreshUuid;
-
-    console.log(accessToken , refreshUuid)
+    const refreshUuid = req.cookies.refreshUuid;
 
     const isVerified = await isVerifiedAccessToken(accessToken);
     const isNotExpired = await checkExpirationDate(accessToken);
 
-    console.log(isVerified , isNotExpired)
-
     if(isVerified && isNotExpired){
+        console.log('accessToken 유효')
         next();
     }else if(isVerified && !isNotExpired){
 
         const subPayload = accessToken.split('.')[1];
         const user = JSON.parse(Buffer.from(subPayload, 'base64').toString()).sub;
+        console.log(user , refreshUuid) // refreshUuid 가 안담겨있다
         const isMatched = await checkRefreshUuid(user, refreshUuid);
 
         if(isMatched){
             const accessToken = new AccessToken(user).token
             const newRefreshUuid = new Uuid().uuid;
             await saveRefreshUuid(user, newRefreshUuid); // 한번 사용된 uuid 값은 새로운 값으로 변경
-            res.cookie('accessToken', accessToken);
-            res.cookie('refreshUuid', newRefreshUuid);
+
+            req.headers.authorization = `Bearer ${accessToken}`;
+            req.headers.refreshUuid = newRefreshUuid;
+            console.log('accessToken 재발행')
             next();
         }else{
             res.redirect('/login')

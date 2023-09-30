@@ -51,7 +51,7 @@ class AccessToken extends Token{
 
         const payLoad = JSON.stringify(
             {"iss":"lee" // 발급자
-            ,"exp": new Date().getTime() + 1000 * 60 * 30 // 만료시간이 30분 이후인 JWT 토큰
+            ,"exp": new Date().getTime() + 1000 * 10 // 만료시간이 30분 이후인 JWT 토큰
             ,"sub" : username // 유저 id
         });
 

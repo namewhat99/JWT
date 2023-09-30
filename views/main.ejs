@@ -13,15 +13,17 @@
 
     const data = document.getElementById('data');
 
-    const accessToken = document.cookie.split('; ').find(data => data.startsWith('access_token')).split('=')[1];
+    const accessToken = document.cookie.split('; ').find(data => data.startsWith('accessToken')).split('=')[1];
     // 쿠키들은 ; 로 구분되므로 먼저 ; 로 자르고, 그 중 accessToken 으로 시작하는 문자열을 반환한다.
     
+    console.log(accessToken)
+
     const getData = async () => {
 
         const temp = await fetch('/api/fetch' , {
             method: 'GET',
             headers: {
-                authorization: `Bearer ${accessToken}`
+                authorization: `Bearer ${accessToken}`,
             }
         })
 
