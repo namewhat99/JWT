@@ -26,3 +26,5 @@
    - axios 로 교체
    - ~~refresh_uuid 를 검증할 때, DB 를 사용해도 되지만 경험삼아 redis 사용 예정~~
    - xss, csrf 
+
+![Alt text](image.png)
