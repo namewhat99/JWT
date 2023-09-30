@@ -20,7 +20,7 @@
    - 해당 사용자가 맞으면 accessToken 재발행, uuid 도 값 갱신
    - 이 부분을 middleware 로 구현해서 각 페이지에서 인가를 확인한다.
 
--[공부할 거리 ](#jwt-) <br>
+- [공부할 거리 ](#jwt-) <br>
    - authorization header , bearer
    - ~~axios 에는 header 에 고정적으로 값을 담을 수 있는 기능이 있는데 js 에도 있나?~~
    - axios 로 교체
