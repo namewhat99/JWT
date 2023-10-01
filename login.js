@@ -101,11 +101,11 @@ const login = async (req, res) => {
 
             res.cookie('accessToken', accessToken);
             res.cookie('refreshUuid', refreshUuid , { httpOnly : true });
-
             res.set({
                 'authorization' : `Bearer ${accessToken}`,
                 'refresh_uuid' : refreshUuid
-            }).status(200).json({loggedIn : true});
+            }).redirect(200, '/')
+
         }else{
             res.status(500).json({loggedIn : false});
         }

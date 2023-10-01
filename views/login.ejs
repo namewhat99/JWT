@@ -32,12 +32,15 @@
 			<p>Authentication powered by <a href="https://www.passportjs.org">Passport</a></p>
 		</footer>
 	</body>
-	<script>
+	<script type="module"src="utils.js"></script>
+	<script type="module">
 
+		import jwtToken from './utils.js';
 		const form = document.getElementById('form');
-
+		
 		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
+
 
 			const username = document.getElementById('username').value;
 			const password = document.getElementById('current-password').value;
@@ -51,6 +54,9 @@
 			})
 
 			if (response.status === 200) {
+
+				const accessToken = response.headers.get('authorization').split(' ')[1];
+				jwtToken.setToken(accessToken);
 				window.location.href = '/';
 			} else {
 				alert('Invalid username or password');
